@@ -1,0 +1,62 @@
+url: /p/test/?_time=1
+ajax: true
+submit_value: Save
+id: frm_test
+items:
+  type_of_issue:
+    type: varchar
+    lable: Type of issue
+    default: null
+    mandatory: true
+    option:
+      '': ''
+      1: Applikation
+      2: Database
+    container_classzzz: row
+  email:
+    type: varchar
+    lable: Email
+    default: null
+    mandatory: true
+    validator:
+      -
+        plugin: wf/form
+        method: validate_email
+  name:
+    type: varchar
+    lable: Name
+    default: John
+  important_level:
+    type: varchar
+    lable: Level of important (1-10)
+    mandatory: true
+    validator:
+      -
+        plugin: wf/form
+        method: validate_numeric
+        data:
+          min: 1
+          max: 10
+  description:
+    type: text
+    lable: Description
+    default: null
+    mandatory: true
+  send_copy_of_this:
+    type: checkbox
+    lable: Send copy of this
+# Call a method when capture the form to save data.
+capture:
+  _buto: Set capture params for using the Capture widget.
+  plugin: wf/form
+  method: test_capture
+# Call a method when render form to fill it with data.
+render:  
+  plugin: wf/form
+  method: test_render
+# Call a method before validation. For example remove item or change mandatory values.
+validation_before:
+  plugin: wf/form
+  method: test_validation_before
+
+

@@ -70,136 +70,155 @@ class PluginWfForm_v2{
       }
     }
     $form_element = array();
-    foreach ($default['items'] as $key => $value) {
-      
-      
-      $default_value = array(
-          'label' => $key,
-          'default' => '',
-          'element_id' => $default['id'].'_'.$key,
-          'name' => $key,
-          'readonly' => null,
-          'type' => null,
-          'checked' => null,
-          'mandatory' => null,
-          'option' => null,
-          'wrap' => null,
-          'class' => 'form-control',
-          'style' => null
-              );
-      $default_value = array_merge($default_value, $value);
-      if($default_value['mandatory']){$default_value['label'] .= '*';}
-      $type = null;
-      $innerHTML = null;
-      $attribute = array('name' => $default_value['name'], 'id' => $default_value['element_id'], 'class' => $default_value['class'], 'style' => $default_value['style']);
-      switch ($default_value['type']) {
-        case 'checkbox':
-          $type = 'input';
-          $attribute['type'] = 'checkbox';
-          if($default_value['checked'] || $default_value['default']=='1'){
-            $attribute['checked'] = 'checked';
-          }
-          break;
-        case 'text':
-          $type = 'textarea';
-          $attribute['wrap'] = $default_value['wrap'];
-          $innerHTML = $default_value['default'];
-          break;
-        case 'password':
-          $type = 'input';
-          $attribute['type'] = 'password';
-          $attribute['value'] = $default_value['default'];
-          break;
-        case 'varchar':
-        case 'date':
-          if($default_value['type']=='date'){
-            $scripts[] = wfDocument::createHtmlElement('script', "if($('#".$default['id']."_$key').datepicker){this.datepicker = $('#".$default['id']."_$key').datepicker({ format: 'yyyy-mm-dd', weekStart: 1, daysOfWeekHighlighted: '0,6', autoclose: true, todayHighlight: true  });}");
-          }
-          if(!$default_value['option']){
-            $type = 'input';
-            $attribute['type'] = 'text';
-            $attribute['value'] = $default_value['default'];
-          }else{
-            $type = 'select';
-            $option = array();
-            foreach ($default_value['option'] as $key2 => $value2) {
-              $temp = array();
-              $temp['value'] = $key2;
-              if((string)$default_value['default']===(string)$key2){
-                $temp['selected'] = 'true';
-              }
-              $option[] = wfDocument::createHtmlElement('option', $value2, $temp);
-            }
-            $innerHTML = $option;
-          }
-          break;
-        case 'hidden':
-          $type = 'input';
-          $attribute['type'] = 'hidden';
-          $attribute['value'] = $default_value['default'];
-          break;
-        case 'div':
-          $type = 'div';
-          break;
-        default:
-          break;
-      }
-      if($type){
-        if($type=='div'){
-          $form_element[] = $value;
-        }else{
-          $temp = array();
-          if(wfArray::get($attribute, 'type') != 'hidden'){
-            $temp['label'] = wfDocument::createHtmlElement('label', $default_value['label'], array('for' => $default_value['element_id']));
-          }
-          /**
-           * Add Bootstrap glyphicon.
-           */
-          if(wfArray::get($value, 'info/text')){
-            $temp['glyphicon_info'] = wfDocument::createHtmlElement('span', null, array(
-                'title' => $default_value['label'], 
-                'class' => 'glyphicon glyphicon-info-sign', 
-                'style' => 'float:right;',
-                'data-toggle' => 'popover',
-                'data-triggerzzz' => 'focus',
-                'data-placement' => 'left',
-                'data-content' => wfArray::get($value, 'info/text')
-                ));
-            $temp['script'] = wfDocument::createHtmlElement('script', " $(function () {  $('[data-toggle=\"popover\"]').popover()}) ");
-          }
-          $temp['input'] = wfDocument::createHtmlElement($type, $innerHTML, $attribute);
-          $form_element[] = wfDocument::createHtmlElement('div', $temp, array(
-                  'id' => 'div_'.$default['id'].'_'.$key, 
-                  'class' => 'form-group '.wfArray::get($value, 'container_class'), 
-                  'style' => wfArray::get($value, 'container_style')
-                  ), array('class' => 'wf_form_row'));
-        }
-      }
-      
-      
-      
+    if($form->get('elements_above')){
+      $form_element[] = wfDocument::createHtmlElement('div', $form->get('elements_above'), array('id' => $default['id'].'_elements_above'));
     }
+    $form_row = array();
+    foreach ($default['items'] as $key => $value) {
+      $form_row[] = PluginWfForm_v2::getRow($key, $value, $default);
+    }
+    $form_element[] = wfDocument::createHtmlElement('div', $form_row, array('id' => $default['id'].'_controls'));
     
+    /**
+     * Layout.
+     */
+    if($form->get('layout')){
+      $form_element[] = wfDocument::createHtmlElement('div', $form->get('layout'), array('id' => $default['id'].'_layout'));
+      $form_element[] = wfDocument::createHtmlElement('script', "document.getElementById('".$default['id']."_controls').style.display='none';");
+      $form_element[] = wfDocument::createHtmlElement('script', "PluginWfForm_v2.renderLayout({id: '".$default['id']."'});");
+    }
+    //
     
-    
+    if($form->get('elements_below')){
+      $form_element[] = wfDocument::createHtmlElement('div', $form->get('elements_below'), array('id' => $default['id'].'_elements_below'));
+    }
     
     $form_element[] = wfDocument::createHtmlElement('div', $buttons, array('class' => 'wf_form_row'));
     $form_attribute = array('id' => $default['id'], 'method' => 'post', 'role' => 'form');
     if(!$default['ajax']){
       $form_attribute['action'] = $default['url'];
     }
-    $form = wfDocument::createHtmlElement('form', $form_element, $form_attribute);
+    
+    
+    $form_render = wfDocument::createHtmlElement('form', $form_element, $form_attribute);
     // Check if form is render in Bootstrap Modal. If so we move save button to modal footer.
     $script_move_btn = wfDocument::createHtmlElement('script', "if(document.getElementById('".$default['id']."').parentNode.className=='modal-body'){document.getElementById(document.getElementById('".$default['id']."').parentNode.id.replace('_body', '_footer')).appendChild(document.getElementById('".$default['id']."_save'));}");
-    wfDocument::renderElement(array($form, $script_move_btn));
+    wfDocument::renderElement(array($form_render, $script_move_btn));
     wfDocument::renderElement($scripts);
   }
   
   
-  private function getRow(){
-    
+  private static function getRow($key, $value, $default){
+    $default_value = array(
+        'label' => $key,
+        'default' => '',
+        'element_id' => $default['id'].'_'.$key,
+        'name' => $key,
+        'readonly' => null,
+        'type' => null,
+        'checked' => null,
+        'mandatory' => null,
+        'option' => null,
+        'wrap' => null,
+        'class' => 'form-control',
+        'style' => null
+            );
+    $default_value = array_merge($default_value, $value);
+    if($default_value['mandatory']){$default_value['label'] .= '*';}
+    $type = null;
+    $innerHTML = null;
+    $attribute = array('name' => $default_value['name'], 'id' => $default_value['element_id'], 'class' => $default_value['class'], 'style' => $default_value['style']);
+    switch ($default_value['type']) {
+      case 'checkbox':
+        $type = 'input';
+        $attribute['type'] = 'checkbox';
+        if($default_value['checked'] || $default_value['default']=='1'){
+          $attribute['checked'] = 'checked';
+        }
+        break;
+      case 'text':
+        $type = 'textarea';
+        $attribute['wrap'] = $default_value['wrap'];
+        $innerHTML = $default_value['default'];
+        break;
+      case 'password':
+        $type = 'input';
+        $attribute['type'] = 'password';
+        $attribute['value'] = $default_value['default'];
+        break;
+      case 'varchar':
+      case 'date':
+        if($default_value['type']=='date'){
+          $scripts[] = wfDocument::createHtmlElement('script', "if($('#".$default['id']."_$key').datepicker){this.datepicker = $('#".$default['id']."_$key').datepicker({ format: 'yyyy-mm-dd', weekStart: 1, daysOfWeekHighlighted: '0,6', autoclose: true, todayHighlight: true  });}");
+        }
+        if(!$default_value['option']){
+          $type = 'input';
+          $attribute['type'] = 'text';
+          $attribute['value'] = $default_value['default'];
+        }else{
+          $type = 'select';
+          $option = array();
+          foreach ($default_value['option'] as $key2 => $value2) {
+            $temp = array();
+            $temp['value'] = $key2;
+            if((string)$default_value['default']===(string)$key2){
+              $temp['selected'] = 'true';
+            }
+            $option[] = wfDocument::createHtmlElement('option', $value2, $temp);
+          }
+          $innerHTML = $option;
+        }
+        break;
+      case 'hidden':
+        $type = 'input';
+        $attribute['type'] = 'hidden';
+        $attribute['value'] = $default_value['default'];
+        break;
+      case 'div':
+        $type = 'div';
+        break;
+      default:
+        break;
+    }
+    if($type){
+      if($type=='div'){
+        return $value;
+      }else{
+        $temp = array();
+        if(wfArray::get($attribute, 'type') != 'hidden'){
+          $temp['label'] = PluginWfForm_v2::getLabel($default_value);
+        }
+        /**
+         * Add Bootstrap glyphicon.
+         */
+        if(wfArray::get($value, 'info/text')){
+          $temp['glyphicon_info'] = wfDocument::createHtmlElement('span', null, array(
+              'id' => 'info_'.$default_value['element_id'],
+              'title' => $default_value['label'], 
+              'class' => 'glyphicon glyphicon-info-sign', 
+              'style' => 'float:right;',
+              'data-toggle' => 'popover',
+              'data-triggerzzz' => 'focus',
+              'data-placement' => 'left',
+              'data-content' => wfArray::get($value, 'info/text')
+              ));
+          $temp['script'] = wfDocument::createHtmlElement('script', " $(function () {  $('[data-toggle=\"popover\"]').popover()}) ");
+        }
+        $temp['input'] = wfDocument::createHtmlElement($type, $innerHTML, $attribute);
+        return wfDocument::createHtmlElement('div', $temp, array(
+                'id' => 'div_'.$default['id'].'_'.$key, 
+                'class' => 'form-group '.wfArray::get($value, 'container_class'), 
+                'style' => wfArray::get($value, 'container_style')
+                ), array('class' => 'wf_form_row'));
+      }
+    }else{
+      return null;
+    }
   }
   
+  private static function getLabel($default_value){
+    return wfDocument::createHtmlElement('label', $default_value['label'], array('for' => $default_value['element_id'], 'id' => 'label_'.$default_value['element_id']));
+  }
   
   /**
    * Capture post from form via ajax.
@@ -601,4 +620,14 @@ class PluginWfForm_v2{
   public function test_capture(){
     return array("alert('PluginWfForm_v2 method test_capture was tested! Replace to another to proceed your work.')");
   }
+  /**
+   * Include javascript file.
+   */
+  public static function widget_include(){
+    $element = array();
+    $element[] = wfDocument::createHtmlElement('script', null, array('src' => '/plugin/wf/form_v2/PluginWfForm_v2.js', 'type' => 'text/javascript'));
+    wfDocument::renderElement($element);
+  }
+  
+  
 }

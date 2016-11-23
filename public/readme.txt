@@ -1,0 +1,1 @@
+Link this content to public directory of Buto.

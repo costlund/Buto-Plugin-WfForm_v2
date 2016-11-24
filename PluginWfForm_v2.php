@@ -77,6 +77,8 @@ class PluginWfForm_v2{
     foreach ($default['items'] as $key => $value) {
       $form_row[] = PluginWfForm_v2::getRow($key, $value, $default);
     }
+    
+    
     $form_element[] = wfDocument::createHtmlElement('div', $form_row, array('id' => $default['id'].'_controls'));
     
     /**
@@ -109,6 +111,7 @@ class PluginWfForm_v2{
   
   
   private static function getRow($key, $value, $default){
+    $scripts = array();
     $default_value = array(
         'label' => $key,
         'default' => '',
@@ -198,13 +201,18 @@ class PluginWfForm_v2{
               'class' => 'glyphicon glyphicon-info-sign', 
               'style' => 'float:right;',
               'data-toggle' => 'popover',
-              'data-triggerzzz' => 'focus',
+              'data-html' => true,
               'data-placement' => 'left',
               'data-content' => wfArray::get($value, 'info/text')
               ));
           $temp['script'] = wfDocument::createHtmlElement('script', " $(function () {  $('[data-toggle=\"popover\"]').popover()}) ");
         }
         $temp['input'] = wfDocument::createHtmlElement($type, $innerHTML, $attribute);
+        if($scripts){
+          foreach ($scripts as $key => $value) {
+            $temp["script$key"] = $value;
+          }
+        }
         return wfDocument::createHtmlElement('div', $temp, array(
                 'id' => 'div_'.$default['id'].'_'.$key, 
                 'class' => 'form-group '.wfArray::get($value, 'container_class'), 

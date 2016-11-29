@@ -16,9 +16,7 @@ function plugin_wf_form_v2(){
           }else if(json[i].type == 'info'){
             if(document.getElementById('info_'+data.id+'_'+json[i].id)){element.appendChild(document.getElementById('info_'+data.id+'_'+json[i].id));}
           }else if(json[i].type == 'div'){
-            if(document.getElementById('label_'+data.id+'_'+json[i].id)){element.appendChild(document.getElementById('label_'+data.id+'_'+json[i].id));}
-            if(document.getElementById('info_'+data.id+'_'+json[i].id)){element.appendChild(document.getElementById('info_'+data.id+'_'+json[i].id));}
-            if(document.getElementById(data.id+'_'+json[i].id)){element.appendChild(document.getElementById(data.id+'_'+json[i].id));}
+            if(document.getElementById('div_'+data.id+'_'+json[i].id)){element.appendChild(document.getElementById('div_'+data.id+'_'+json[i].id));}
           }
         }
       }

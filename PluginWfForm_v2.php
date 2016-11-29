@@ -209,8 +209,8 @@ class PluginWfForm_v2{
         }
         $temp['input'] = wfDocument::createHtmlElement($type, $innerHTML, $attribute);
         if($scripts){
-          foreach ($scripts as $key => $value) {
-            $temp["script$key"] = $value;
+          foreach ($scripts as $key2 => $value2) {
+            $temp["script$key2"] = $value2;
           }
         }
         return wfDocument::createHtmlElement('div', $temp, array(

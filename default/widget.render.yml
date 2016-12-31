@@ -58,5 +58,15 @@ render:
 validation_before:
   plugin: wf/form
   method: test_validation_before
+_layout_help: Use the layout param to customize your form. Don´t miss to use the include widget if using this. 
+_layout:
+  -
+    type: div
+    attribute: {class: row}
+    innerHTML:
+      -
+        type: div
+        attribute: {class: col-md-4}
+        innerHTML: 'item[{"id": "type_of_issue", "type": "div"}]'
 
 

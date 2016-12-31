@@ -3,6 +3,13 @@
  * Plugin to render and handle forms.
  */
 class PluginWfForm_v2{
+  private $i18n = null;
+  function __construct($buto = false) {
+    if($buto){
+      wfPlugin::includeonce('wf/i18n');
+      $this->i18n = new PluginWfI18n();
+    }
+  }
   /**
    * <p>Render a form.</p> 
    * <p>Consider to add data in separate xml file because you need to pic it up again when handle posting values. Use widget to handle post request if necessary.</p> 
@@ -60,7 +67,8 @@ class PluginWfForm_v2{
     $buttons = array();
     if($default['ajax']) {
       $onclick = "$.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); });return false;";
-      $buttons[] = wfDocument::createHtmlElement('input', null, array('type' => 'submit', 'value' => $default['submit_value'], 'class' => $default['submit_class'], 'onclick' => $onclick, 'id' => $default['id'].'_save'));
+      //$buttons[] = wfDocument::createHtmlElement('input', null, array('type' => 'submit', 'value' => $default['submit_value'], 'class' => $default['submit_class'], 'onclick' => $onclick, 'id' => $default['id'].'_save'));
+      $buttons[] = wfDocument::createHtmlElement('a', $default['submit_value'], array('class' => $default['submit_class'], 'onclick' => $onclick, 'id' => $default['id'].'_save'));
     }  else {
       $buttons[] = wfDocument::createHtmlElement('input', null, array('type' => 'submit', 'value' => $default['submit_value'], 'class' => $default['submit_class']));
     }
@@ -103,6 +111,7 @@ class PluginWfForm_v2{
     
     
     $form_render = wfDocument::createHtmlElement('form', $form_element, $form_attribute);
+    //wfHelp::yml_dump($form_render);
     // Check if form is render in Bootstrap Modal. If so we move save button to modal footer.
     $script_move_btn = wfDocument::createHtmlElement('script', "if(document.getElementById('".$default['id']."').parentNode.className=='modal-body'){document.getElementById(document.getElementById('".$default['id']."').parentNode.id.replace('_body', '_footer')).appendChild(document.getElementById('".$default['id']."_save'));}");
     wfDocument::renderElement(array($form_render, $script_move_btn));
@@ -195,15 +204,17 @@ class PluginWfForm_v2{
          * Add Bootstrap glyphicon.
          */
         if(wfArray::get($value, 'info/text')){
-          $temp['glyphicon_info'] = wfDocument::createHtmlElement('span', null, array(
+          $temp['glyphicon_info'] = wfDocument::createHtmlElement('a', null, array(
               'id' => 'info_'.$default_value['element_id'],
               'title' => $default_value['label'], 
               'class' => 'glyphicon glyphicon-info-sign', 
               'style' => 'float:right;',
               'data-toggle' => 'popover',
+              'data-trigger' => 'focus',
               'data-html' => true,
               'data-placement' => 'left',
-              'data-content' => wfArray::get($value, 'info/text')
+              'data-content' => wfArray::get($value, 'info/text'),
+              'href' => '#/'
               ));
           $temp['script'] = wfDocument::createHtmlElement('script', " $(function () {  $('[data-toggle=\"popover\"]').popover()}) ");
         }
@@ -293,6 +304,11 @@ class PluginWfForm_v2{
    * @return type
    */
   public static function validate($form){
+    /**
+     * i18n.
+     */
+    wfPlugin::includeonce('wf/i18n');
+    $i18n = new PluginWfI18n();
     //Validate mandatory.
     foreach ($form['items'] as $key => $value) {
         if(isset($value['mandatory']) && $value['mandatory']){
@@ -300,7 +316,8 @@ class PluginWfForm_v2{
                 $form['items'][$key]['is_valid'] = true;
             }else{
                 $form['items'][$key]['is_valid'] = false;
-                $form['items'][$key]['errors'][] = __('?label is empty.', array('?label' => $form['items'][$key]['label']));
+                //$form['items'][$key]['errors'][] = __('?label is empty.', array('?label' => $form['items'][$key]['label']));
+                $form['items'][$key]['errors'][] = $i18n->translateFromTheme('?label is empty.', array('?label' => $i18n->translateFromTheme($form['items'][$key]['label'])));
             }
         }else{
             $form['items'][$key]['is_valid'] = true;
@@ -342,12 +359,15 @@ class PluginWfForm_v2{
         }
       }
     }
+    
+    
     //Set form is_valid.
     $form['is_valid'] = true;
     foreach ($form['items'] as $key => $value) {
         if(!$value['is_valid']){
             $form['is_valid'] = false;
-            $form['errors'][] = __('The form does not pass validation.');
+            //$form['errors'][] = __('The form does not pass validation.');
+            $form['errors'][] = $i18n->translateFromTheme('The form does not pass validation.');
             break;
         }
     }
@@ -409,7 +429,8 @@ class PluginWfForm_v2{
     if(wfArray::get($form, "items/$field/is_valid") && wfArray::get($form, "items/$field/post_value")){
       if (!filter_var(wfArray::get($form, "items/$field/post_value"), FILTER_VALIDATE_EMAIL)) {
         $form = wfArray::set($form, "items/$field/is_valid", false);
-        $form = wfArray::set($form, "items/$field/errors/", __('?label is not validated as email!', array('?label' => wfArray::get($form, "items/$field/label"))));
+        //$form = wfArray::set($form, "items/$field/errors/", __('?label is not an email!', array('?label' => wfArray::get($form, "items/$field/label"))));
+        $form = wfArray::set($form, "items/$field/errors/", $this->i18n->translateFromTheme('?label is not an email!', array('?label' => $this->i18n->translateFromTheme(wfArray::get($form, "items/$field/label")))));
       }
     }
     return $form;

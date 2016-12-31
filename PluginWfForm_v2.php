@@ -39,6 +39,9 @@ class PluginWfForm_v2{
      */
     $form = new PluginWfArray($data['data']);
     wfPlugin::includeonce('wf/array');
+    
+    $data_obj = new PluginWfArray($data);
+    
     $scripts = array();
     /**
      * Call a render method if exist to fill the form.
@@ -66,8 +69,11 @@ class PluginWfForm_v2{
     $default['url'] = wfSettings::replaceClass($default['url']);
     $buttons = array();
     if($default['ajax']) {
-      $onclick = "$.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); });return false;";
-      //$buttons[] = wfDocument::createHtmlElement('input', null, array('type' => 'submit', 'value' => $default['submit_value'], 'class' => $default['submit_class'], 'onclick' => $onclick, 'id' => $default['id'].'_save'));
+      if(!$data_obj->get('data/ajax_element')){
+        $onclick = "$.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); });return false;";
+      }else{
+        $onclick = "PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' ); return false;";
+      }
       $buttons[] = wfDocument::createHtmlElement('a', $default['submit_value'], array('class' => $default['submit_class'], 'onclick' => $onclick, 'id' => $default['id'].'_save'));
     }  else {
       $buttons[] = wfDocument::createHtmlElement('input', null, array('type' => 'submit', 'value' => $default['submit_value'], 'class' => $default['submit_class']));
@@ -133,7 +139,8 @@ class PluginWfForm_v2{
         'option' => null,
         'wrap' => null,
         'class' => 'form-control',
-        'style' => null
+        'style' => null,
+        'placeholder' => null
             );
     $default_value = array_merge($default_value, $value);
     if($default_value['mandatory']){$default_value['label'] .= '*';}
@@ -167,6 +174,7 @@ class PluginWfForm_v2{
           $type = 'input';
           $attribute['type'] = 'text';
           $attribute['value'] = $default_value['default'];
+          $attribute['placeholder'] = $default_value['placeholder'];
         }else{
           $type = 'select';
           $option = array();
@@ -204,15 +212,19 @@ class PluginWfForm_v2{
          * Add Bootstrap glyphicon.
          */
         if(wfArray::get($value, 'info/text')){
+          $data_placement = 'left';
+          if(wfArray::get($value, 'info/position')){
+            $data_placement = wfArray::get($value, 'info/position');
+          }
           $temp['glyphicon_info'] = wfDocument::createHtmlElement('a', null, array(
               'id' => 'info_'.$default_value['element_id'],
               'title' => $default_value['label'], 
               'class' => 'glyphicon glyphicon-info-sign', 
               'style' => 'float:right;',
               'data-toggle' => 'popover',
-              'data-trigger' => 'focus',
+              'data-trigger' => 'click',
               'data-html' => true,
-              'data-placement' => 'left',
+              'data-placement' => $data_placement,
               'data-content' => wfArray::get($value, 'info/text'),
               'href' => '#/'
               ));
@@ -252,10 +264,11 @@ class PluginWfForm_v2{
      */
     wfPlugin::includeonce('wf/array');
     $form = new PluginWfArray($data['data']);
+    $form->set(null, PluginWfForm_v2::bind($form->get()));
     if($form->get('validation_before/plugin') && $form->get('validation_before/method')){
       $form = (PluginWfForm_v2::runCaptureMethod($form->get('validation_before/plugin'), $form->get('validation_before/method'), $form));
     }
-    $form->set(null, PluginWfForm_v2::bindAndValidate($form->get()));
+    $form->set(null, PluginWfForm_v2::validate($form->get()));
     $json->set('success', false);
     $json->set('uid', wfCrypt::getUid());
     if($form->get('is_valid')){
@@ -283,6 +296,12 @@ class PluginWfForm_v2{
       $form['items'][$key]['post_value'] = $str;
       if(!$preserve_default){
         $form['items'][$key]['default'] = $str;
+      }
+      /**
+       * Set '' to null if type is date to get it to work with wf/mysql.
+       */
+      if($form['items'][$key]['type']=='date' && $form['items'][$key]['post_value']==''){
+        $form['items'][$key]['post_value'] = null;
       }
     }
     return $form;

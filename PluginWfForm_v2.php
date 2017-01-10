@@ -108,18 +108,20 @@ class PluginWfForm_v2{
     if($form->get('elements_below')){
       $form_element[] = wfDocument::createHtmlElement('div', $form->get('elements_below'), array('id' => $default['id'].'_elements_below'));
     }
-    
+    //wfHelp::yml_dump($buttons);
     $form_element[] = wfDocument::createHtmlElement('div', $buttons, array('class' => 'wf_form_row'));
     $form_attribute = array('id' => $default['id'], 'method' => 'post', 'role' => 'form');
     if(!$default['ajax']){
       $form_attribute['action'] = $default['url'];
     }
-    
-    
     $form_render = wfDocument::createHtmlElement('form', $form_element, $form_attribute);
-    //wfHelp::yml_dump($form_render);
-    // Check if form is render in Bootstrap Modal. If so we move save button to modal footer.
-    $script_move_btn = wfDocument::createHtmlElement('script', "if(document.getElementById('".$default['id']."').parentNode.className=='modal-body'){document.getElementById(document.getElementById('".$default['id']."').parentNode.id.replace('_body', '_footer')).appendChild(document.getElementById('".$default['id']."_save'));}");
+    /**
+     * Move buttons to footer if Bootstrap modal.
+     */
+    $script_move_btn = wfDocument::createHtmlElement('script', "if(typeof PluginWfBootstrapjs == 'object'){PluginWfBootstrapjs.moveModalButtons('".$form->get('id')."');}");
+    /**
+     * 
+     */
     wfDocument::renderElement(array($form_render, $script_move_btn));
     wfDocument::renderElement($scripts);
   }
@@ -143,7 +145,7 @@ class PluginWfForm_v2{
         'placeholder' => null
             );
     $default_value = array_merge($default_value, $value);
-    if($default_value['mandatory']){$default_value['label'] .= '*';}
+    //if($default_value['mandatory']){$default_value['label'] .= '*';}
     $type = null;
     $innerHTML = null;
     $attribute = array('name' => $default_value['name'], 'id' => $default_value['element_id'], 'class' => $default_value['class'], 'style' => $default_value['style']);
@@ -207,7 +209,12 @@ class PluginWfForm_v2{
         $temp = array();
         if(wfArray::get($attribute, 'type') != 'hidden'){
           $temp['label'] = PluginWfForm_v2::getLabel($default_value);
+          if($default_value['mandatory']){
+            $temp['mandatory'] = wfDocument::createHtmlElement('label', '*', array('id' => 'label_mandatory_'.$default_value['element_id']));
+          }
         }
+        
+        
         /**
          * Add Bootstrap glyphicon.
          */

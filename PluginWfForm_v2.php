@@ -337,6 +337,12 @@ class PluginWfForm_v2{
     $i18n = new PluginWfI18n();
     //Validate mandatory.
     foreach ($form['items'] as $key => $value) {
+      /**
+       * If alerade validated skip this field.
+       */
+      if(isset($form['items'][$key]['is_valid']) && $form['items'][$key]['is_valid']==false){
+        continue;
+      }
         if(isset($value['mandatory']) && $value['mandatory']){
             if(strlen($value['post_value'])){
                 $form['items'][$key]['is_valid'] = true;

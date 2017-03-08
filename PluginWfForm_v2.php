@@ -61,6 +61,7 @@ class PluginWfForm_v2{
         'ajax' => false,
         'url' => '/doc/_',
         'items' => array()
+#        'plugin_bootstrap_alertwait' => false
         );
     /**
      * Merge defaults with widget data.
@@ -70,9 +71,19 @@ class PluginWfForm_v2{
     $buttons = array();
     if($default['ajax']) {
       if(!$data_obj->get('data/ajax_element')){
-        $onclick = "$.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); });return false;";
+//        if(!$default['plugin_bootstrap_alertwait']){
+//          $onclick = "$.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); }); return false;";
+//        }else{
+//          $onclick = "PluginBootstrapAlertwait.run(function(){  $.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); })     }); return false;";
+//        }
+        $onclick = "if(typeof PluginBootstrapAlertwait == 'object'){PluginBootstrapAlertwait.run(function(){  $.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); })     }); return false;}else{ $.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); }); return false; }";
       }else{
-        $onclick = "PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' ); return false;";
+//        if(!$default['plugin_bootstrap_alertwait']){
+//          $onclick = "PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' ); return false;";
+//        }else{
+//          $onclick = "PluginBootstrapAlertwait.run(function() {PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' )     }); return false;";
+//        }
+        $onclick = "if(typeof PluginBootstrapAlertwait == 'object'){ PluginBootstrapAlertwait.run(function() {PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' )     }); return false; }else{ PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' ); return false; }";
       }
       $buttons[] = wfDocument::createHtmlElement('a', $default['submit_value'], array('class' => $default['submit_class'], 'onclick' => $onclick, 'id' => $default['id'].'_save'));
     }  else {
@@ -135,7 +146,7 @@ class PluginWfForm_v2{
         'element_id' => $default['id'].'_'.$key,
         'name' => $key,
         'readonly' => null,
-        'type' => null,
+        'type' => 'varchar',
         'checked' => null,
         'mandatory' => null,
         'option' => null,
@@ -167,6 +178,14 @@ class PluginWfForm_v2{
         $attribute['type'] = 'password';
         $attribute['value'] = $default_value['default'];
         break;
+      case 'map':
+        $type = 'input';
+        $attribute['type'] = 'text';
+        $attribute['value'] = htmlentities($default_value['default']);
+        $attribute['style'] = 'display:none';
+        $attribute['onchange'] = "if(this.value.length){document.getElementById('span_map_icon_".$default_value['element_id']."').style.display='';}else{document.getElementById('span_map_icon_".$default_value['element_id']."').style.display='none';}";
+        break;
+        break;
       case 'varchar':
       case 'date':
         if($default_value['type']=='date'){
@@ -175,7 +194,7 @@ class PluginWfForm_v2{
         if(!$default_value['option']){
           $type = 'input';
           $attribute['type'] = 'text';
-          $attribute['value'] = $default_value['default'];
+          $attribute['value'] = htmlentities($default_value['default']);
           $attribute['placeholder'] = $default_value['placeholder'];
         }else{
           $type = 'select';
@@ -212,6 +231,13 @@ class PluginWfForm_v2{
           if($default_value['mandatory']){
             $temp['mandatory'] = wfDocument::createHtmlElement('label', '*', array('id' => 'label_mandatory_'.$default_value['element_id']));
           }
+        }
+        if($default_value['type'] == 'map'){
+          $display = 'none';
+          if(strlen($default_value['default'])){
+            $display = '';
+          }
+          $temp['map_icon'] = wfDocument::createHtmlElement('a', array(wfDocument::createHtmlElement('span', null, array('id' => 'span_map_icon_'.$default_value['element_id'], 'class' => 'glyphicon glyphicon-map-marker', 'style' => "display:$display"))), array('onclick' => "PluginWfForm_v2.showMap('".$default_value['element_id']."');", 'class' => 'form-control', 'style' => "text-align:right"));
         }
         
         

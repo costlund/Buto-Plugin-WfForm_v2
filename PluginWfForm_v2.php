@@ -6,6 +6,7 @@ class PluginWfForm_v2{
   private $i18n = null;
   function __construct($buto = false) {
     if($buto){
+      wfPlugin::includeonce('wf/array');
       wfPlugin::includeonce('wf/i18n');
       $this->i18n = new PluginWfI18n();
     }

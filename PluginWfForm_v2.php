@@ -716,6 +716,51 @@ class PluginWfForm_v2{
     $element[] = wfDocument::createHtmlElement('script', null, array('src' => '/plugin/wf/form_v2/PluginWfForm_v2.js', 'type' => 'text/javascript'));
     wfDocument::renderElement($element);
   }
-  
-  
+  /**
+   * Email form data via capture call.
+   * Call this as an capture method from form yml data to send multiple emails.
+   #code-yml#
+    capture:
+      plugin: 'wf/form_v2'
+      method: send
+      data:
+        phpmailer: 'Phpmailer data...'
+        email:
+          - 'me@world.com'
+        script:
+          - "location.reload();"
+   #code#
+   */
+  public function send($form){
+    /**
+     * Mail settings.
+     */
+    $phpmailer = new PluginWfArray($form->get('capture/data/phpmailer'));
+    /**
+     * Body.
+     */
+    $body = null;
+    foreach ($form->get('items') as $key => $value) {
+      $item = new PluginWfArray($value);
+      $label = $item->get('label');
+      $post_value = $item->get('post_value');
+      $body .= "<p><strong>$label</strong></p>";
+      $body .= "<p>$post_value</p>";
+    }
+    $phpmailer->set('Body', $body);
+    $body = "<html><body>".$body."</body></html>";
+    /**
+     * Send.
+     */
+    wfPlugin::includeonce('wf/phpmailer');
+    $wf_phpmailer = new PluginWfPhpmailer();
+    foreach ($form->get('capture/data/email') as $key => $value) {
+      $phpmailer->set('To', $value);
+      $wf_phpmailer->send($phpmailer->get());
+    }
+    /**
+     * Return script.
+     */
+    return $form->get('capture/data/script');
+  }
 }

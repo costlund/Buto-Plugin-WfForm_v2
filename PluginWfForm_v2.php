@@ -190,7 +190,7 @@ class PluginWfForm_v2{
       case 'varchar':
       case 'date':
         if($default_value['type']=='date'){
-          $scripts[] = wfDocument::createHtmlElement('script', "if($('#".$default['id']."_$key').datepicker){this.datepicker = $('#".$default['id']."_$key').datepicker({ format: 'yyyy-mm-dd', weekStart: 1, daysOfWeekHighlighted: '0,6', autoclose: true, todayHighlight: true  });}");
+          $scripts[] = wfDocument::createHtmlElement('script', "if($('#".$default['id']."_$key').datepicker){this.datepicker = $('#".$default['id']."_$key').datepicker({ format: 'yyyy-mm-dd', weekStart: 1, daysOfWeekHighlighted: '0,6', autoclose: true, todayHighlight: true, forceParse: false  });}");
         }
         if(!$default_value['option']){
           $type = 'input';
@@ -747,8 +747,8 @@ class PluginWfForm_v2{
       $body .= "<p><strong>$label</strong></p>";
       $body .= "<p>$post_value</p>";
     }
-    $phpmailer->set('Body', $body);
     $body = "<html><body>".$body."</body></html>";
+    $phpmailer->set('Body', $body);
     /**
      * Send.
      */

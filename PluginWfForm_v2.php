@@ -12,8 +12,80 @@ class PluginWfForm_v2{
     }
   }
   /**
+   * Primary key (only one).
+   */
+  private static function getSchemaFieldPrimary($field){
+    $primary_key = null;
+    $primary_type = null;
+    foreach ($field as $key => $value) {
+      $item = new PluginWfArray($value);
+      if($item->get('primary_key')){
+        if($primary_key){
+          exit('PluginWfForm_v2 says: Table should only have one primary key.');
+        }else{
+          $primary_key = $key;
+          if(strstr($item->get('type'), 'varchar(')){
+            $primary_type = 's';
+          }elseif(strstr($item->get('type'), 'int(')){
+            $primary_type = 'i';
+          }
+        }
+      }
+    }
+    if(!$primary_key){
+      exit('PluginWfForm_v2 says: Table has no primary key.');
+    }
+    return new PluginWfArray(array('primary_key'  => $primary_key, 'primary_type' => $primary_type));
+  }
+  private static function setFormItemsDefaultFromDb($form){
+    /**
+     * Get items via schema.
+     */
+    $field = PluginWfForm_v2::getSchema($form);
+    /**
+     * Primary key (only one).
+     */
+    $primary = PluginWfForm_v2::getSchemaFieldPrimary($field);
+    $primary_key = $primary->get('primary_key');
+    $primary_type = $primary->get('primary_type');
+    /**
+     * Create select sql.
+     */
+    $sql = 'select ';
+    foreach ($field as $key => $value) {
+      $sql .= "$key, ";
+    }
+    $sql = substr($sql, 0, strlen($sql)-2);
+    $sql .= " from ".$form->get('table')." where $primary_key=?;";
+    $select = array();
+    foreach ($field as $key => $value) {
+      $select[] = $key;
+    }
+    $params = array();
+    $params[$primary_key] = array('type' => $primary_type, 'value' => wfRequest::get($primary_key));
+    $mysql_data = array('sql' => $sql, 'select' => $select, 'params' => $params);
+    /**
+     * Get data.
+     */
+    if(wfRequest::get($primary_key)){
+      wfPlugin::includeonce('wf/mysql');
+      $mysql = new PluginWfMysql();
+      $mysql->open($form->get('mysql'));
+      $mysql->execute($mysql_data);
+      $rs = new PluginWfArray($mysql->getStmtAsArray());
+      if($rs->get('0')){
+        foreach ($rs->get('0') as $key => $value) {
+          if($form->get("items/$key")){
+            $form->set("items/$key/default", $value);
+          }
+        }
+      }
+    }
+    return $form;
+  }
+  /**
    * <p>Render a form.</p> 
-   * <p>Consider to add data in separate xml file because you need to pic it up again when handle posting values. Use widget to handle post request if necessary.</p> 
+   * <p>Consider to add data in separate yml file because you need to pic it up again when handle posting values. Use widget to handle post request if necessary.</p> 
    * <p>'yml:/theme/[theme]/form/my_form.yml'</p>
    */
   public static function widget_render($data){
@@ -38,18 +110,22 @@ class PluginWfForm_v2{
     /**
      * Create form and include dependencies.
      */
-    $form = new PluginWfArray($data['data']);
     wfPlugin::includeonce('wf/array');
-    
+    $form = new PluginWfArray($data['data']);
     $data_obj = new PluginWfArray($data);
-    
     $scripts = array();
+    /**
+     * Get from db via schema.
+     */
+    if($form->get('schema') && $form->get('table') && $form->get('mysql')){
+      $form = PluginWfForm_v2::setFormItemsDefaultFromDb($form);
+    }
     /**
      * Call a render method if exist to fill the form.
      */
     if($form->get('render/plugin') && $form->get('render/method')){
       $form = (PluginWfForm_v2::runCaptureMethod($form->get('render/plugin'), $form->get('render/method'), $form));
-      $data['data'] = $form->get();
+      //$data['data'] = $form->get();
     }
     /**
      * Default values.
@@ -62,51 +138,50 @@ class PluginWfForm_v2{
         'ajax' => false,
         'url' => '/doc/_',
         'items' => array()
-#        'plugin_bootstrap_alertwait' => false
         );
     /**
      * Merge defaults with widget data.
      */
-    $default = array_merge($default, $data['data']);
+    $default = array_merge($default, $form->get());
     $default['url'] = wfSettings::replaceClass($default['url']);
+    /**
+     * Buttons.
+     */
     $buttons = array();
     if($default['ajax']) {
       if(!$data_obj->get('data/ajax_element')){
-//        if(!$default['plugin_bootstrap_alertwait']){
-//          $onclick = "$.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); }); return false;";
-//        }else{
-//          $onclick = "PluginBootstrapAlertwait.run(function(){  $.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); })     }); return false;";
-//        }
         $onclick = "if(typeof PluginBootstrapAlertwait == 'object'){PluginBootstrapAlertwait.run(function(){  $.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); })     }); return false;}else{ $.post('".$default['url']."', $('#".$default['id']."').serialize()).done(function(data) { PluginWfCallbackjson.call( data ); }); return false; }";
       }else{
-//        if(!$default['plugin_bootstrap_alertwait']){
-//          $onclick = "PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' ); return false;";
-//        }else{
-//          $onclick = "PluginBootstrapAlertwait.run(function() {PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' )     }); return false;";
-//        }
         $onclick = "if(typeof PluginBootstrapAlertwait == 'object'){ PluginBootstrapAlertwait.run(function() {PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' )     }); return false; }else{ PluginWfCallbackjson.setElement('".$data_obj->get('data/ajax_element')."', '".$default['url']."', '".$default['id']."' ); return false; }";
       }
       $buttons[] = wfDocument::createHtmlElement('a', $default['submit_value'], array('class' => $default['submit_class'], 'onclick' => $onclick, 'id' => $default['id'].'_save'));
     }  else {
       $buttons[] = wfDocument::createHtmlElement('input', null, array('type' => 'submit', 'value' => $default['submit_value'], 'class' => $default['submit_class']));
     }
-    if(isset($data['data']['buttons'])) { 
-      foreach ($data['data']['buttons'] as $key => $value) {
+    if($form->get('buttons')){
+      foreach ($form->get('buttons') as $key => $value) {
         $buttons[] = wfDocument::createHtmlElement($value['type'], $value['innerHTML'], $value['attribute']);
       }
     }
+    /**
+     * Elements above.
+     */
     $form_element = array();
     if($form->get('elements_above')){
       $form_element[] = wfDocument::createHtmlElement('div', $form->get('elements_above'), array('id' => $default['id'].'_elements_above'));
     }
+    /**
+     * Items.
+     */
     $form_row = array();
-    foreach ($default['items'] as $key => $value) {
-      $form_row[] = PluginWfForm_v2::getRow($key, $value, $default);
+    if(sizeof($default['items']) > 0){
+      foreach ($default['items'] as $key => $value) {
+        $form_row[] = PluginWfForm_v2::getRow($key, $value, $default);
+      }
+    }else{
+      exit('No items or schema/table/mysql is set.');
     }
-    
-    
     $form_element[] = wfDocument::createHtmlElement('div', $form_row, array('id' => $default['id'].'_controls'));
-    
     /**
      * Layout.
      */
@@ -115,13 +190,19 @@ class PluginWfForm_v2{
       $form_element[] = wfDocument::createHtmlElement('script', "document.getElementById('".$default['id']."_controls').style.display='none';");
       $form_element[] = wfDocument::createHtmlElement('script', "PluginWfForm_v2.renderLayout({id: '".$default['id']."'});");
     }
-    //
-    
+    /**
+     * Elements below.
+     */
     if($form->get('elements_below')){
       $form_element[] = wfDocument::createHtmlElement('div', $form->get('elements_below'), array('id' => $default['id'].'_elements_below'));
     }
-    //wfHelp::yml_dump($buttons);
+    /**
+     * Buttons.
+     */
     $form_element[] = wfDocument::createHtmlElement('div', $buttons, array('class' => 'wf_form_row'));
+    /**
+     * Attribute.
+     */
     $form_attribute = array('id' => $default['id'], 'method' => 'post', 'role' => 'form');
     if(!$default['ajax']){
       $form_attribute['action'] = $default['url'];
@@ -132,13 +213,32 @@ class PluginWfForm_v2{
      */
     $script_move_btn = wfDocument::createHtmlElement('script', "if(typeof PluginWfBootstrapjs == 'object'){PluginWfBootstrapjs.moveModalButtons('".$form->get('id')."');}");
     /**
-     * 
+     * Render.
      */
     wfDocument::renderElement(array($form_render, $script_move_btn));
     wfDocument::renderElement($scripts);
   }
-  
-  
+  /**
+   * Get fields via schema.
+   */
+  public static function getSchema($form){
+    $schema = new PluginWfYml(wfArray::get($GLOBALS, 'sys/app_dir').$form->get('schema'));
+    $field = new PluginWfArray($schema->get('tables/'.$form->get('table')));
+    $extra = new PluginWfArray($schema->get('extra'));
+    if($extra->get('field')){
+      foreach ($extra->get('field') as $key => $value) {
+        $field->set("field/$key", $value);
+      }
+    }
+    return $field->get('field');
+  }
+  /**
+   * 
+   * @param type $key
+   * @param type $value
+   * @param type $default
+   * @return type
+   */
   private static function getRow($key, $value, $default){
     $scripts = array();
     $default_value = array(
@@ -157,7 +257,6 @@ class PluginWfForm_v2{
         'placeholder' => null
             );
     $default_value = array_merge($default_value, $value);
-    //if($default_value['mandatory']){$default_value['label'] .= '*';}
     $type = null;
     $innerHTML = null;
     $attribute = array('name' => $default_value['name'], 'id' => $default_value['element_id'], 'class' => $default_value['class'], 'style' => $default_value['style']);
@@ -240,8 +339,6 @@ class PluginWfForm_v2{
           }
           $temp['map_icon'] = wfDocument::createHtmlElement('a', array(wfDocument::createHtmlElement('span', null, array('id' => 'span_map_icon_'.$default_value['element_id'], 'class' => 'glyphicon glyphicon-map-marker', 'style' => "display:$display"))), array('onclick' => "PluginWfForm_v2.showMap('".$default_value['element_id']."');", 'class' => 'form-control', 'style' => "text-align:right"));
         }
-        
-        
         /**
          * Add Bootstrap glyphicon.
          */
@@ -280,11 +377,9 @@ class PluginWfForm_v2{
       return null;
     }
   }
-  
   private static function getLabel($default_value){
     return wfDocument::createHtmlElement('label', $default_value['label'], array('for' => $default_value['element_id'], 'id' => 'label_'.$default_value['element_id']));
   }
-  
   /**
    * Capture post from form via ajax.
    * @param type $data
@@ -418,8 +513,6 @@ class PluginWfForm_v2{
         }
       }
     }
-    
-    
     //Set form is_valid.
     $form['is_valid'] = true;
     foreach ($form['items'] as $key => $value) {
@@ -709,6 +802,59 @@ class PluginWfForm_v2{
     return array("alert('PluginWfForm_v2 method test_capture was tested! Replace to another to proceed your work.')");
   }
   /**
+   * 
+   */
+  public function schema_capture($form){
+    /**
+     * Create save sql.
+     */
+    if($form->get('schema') && $form->get('table') && $form->get('mysql')){
+      //$form = PluginWfForm_v2::setFormItemsDefaultFromDb($form);
+      $field = new PluginWfArray(PluginWfForm_v2::getSchema($form));
+      /**
+       * Primary key (only one).
+       */
+      $primary = PluginWfForm_v2::getSchemaFieldPrimary($field->get());
+      $primary_key = $primary->get('primary_key');
+      $primary_type = $primary->get('primary_type');
+      
+      //wfHelp::yml_dump($field);
+      $sql = "update ".$form->get('table')." set ";
+//      foreach ($field as $key => $value) {
+//        $sql .= "$key=?, ";
+//      }
+      foreach ($form->get('items') as $key => $value) {
+        $sql .= "$key=?, ";
+      }
+      $sql = substr($sql, 0, strlen($sql)-2);
+      $sql .= " where $primary_key=?;";
+      $params = array();
+      foreach ($form->get('items') as $key => $value) {
+        $item = new PluginWfArray($value);
+        
+        $type = null;
+        if(strstr($field->get("$key/type"), 'varchar(')){
+          $type = 's';
+        }elseif(strstr($field->get("$key/type"), 'int(')){
+          $type = 'i';
+        }
+        
+        $params[$key] = array('type' => $type, 'value' => $item->get('post_value'));
+      }
+      $params['primary_key'] = array('type' => $primary_type, 'value' => wfRequest::get($primary_key));
+      $mysql_data = array('sql' => $sql, 'params' => $params);
+      wfHelp::yml_dump($mysql_data);
+      /**
+       * Save to db.
+       */
+      wfPlugin::includeonce('wf/mysql');
+      $mysql = new PluginWfMysql();
+      $mysql->open($form->get('mysql'));
+      $mysql->execute($mysql_data);
+    }
+   
+  }
+  /**
    * Include javascript file.
    */
   public static function widget_include(){
@@ -735,7 +881,11 @@ class PluginWfForm_v2{
     /**
      * Mail settings.
      */
-    $phpmailer = new PluginWfArray($form->get('capture/data/phpmailer'));
+    $phpmailer = wfSettings::getSettingsFromYmlString($form->get('capture/data/phpmailer'));
+    
+    //echo '<pre>'; print_r($phpmailer); exit;
+    
+    $phpmailer = new PluginWfArray($phpmailer);
     /**
      * Body.
      */

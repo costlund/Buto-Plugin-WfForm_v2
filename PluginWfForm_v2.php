@@ -347,17 +347,17 @@ class PluginWfForm_v2{
           if(wfArray::get($value, 'info/position')){
             $data_placement = wfArray::get($value, 'info/position');
           }
-          $temp['glyphicon_info'] = wfDocument::createHtmlElement('a', null, array(
+          $temp['glyphicon_info'] = wfDocument::createHtmlElement('span', null, array(
               'id' => 'info_'.$default_value['element_id'],
               'title' => $default_value['label'], 
-              'class' => 'glyphicon glyphicon-info-sign', 
-              'style' => 'float:right;',
+              'class' => 'wf_form_v2 glyphicon glyphicon-info-sign', 
+              'style' => 'float:right;cursor:pointer;',
               'data-toggle' => 'popover',
               'data-trigger' => 'click',
               'data-html' => true,
               'data-placement' => $data_placement,
               'data-content' => wfArray::get($value, 'info/text'),
-              'href' => '#/'
+              'onclick' => "$('.wf_form_v2').popover('hide');"
               ));
           $temp['script'] = wfDocument::createHtmlElement('script', " $(function () {  $('[data-toggle=\"popover\"]').popover()}) ");
         }

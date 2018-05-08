@@ -882,10 +882,13 @@ class PluginWfForm_v2{
      * Mail settings.
      */
     $phpmailer = wfSettings::getSettingsFromYmlString($form->get('capture/data/phpmailer'));
-    
-    //echo '<pre>'; print_r($phpmailer); exit;
-    
     $phpmailer = new PluginWfArray($phpmailer);
+    /**
+     * Reply to.
+     */
+    if(wfRequest::get('email')){
+      $phpmailer->set('ReplyTo', wfRequest::get('email'));
+    }
     /**
      * Body.
      */

@@ -447,6 +447,26 @@ class PluginWfForm_v2{
     return $form;
   }
   /**
+   * Set option from array.
+      -
+        value: 11
+        option: 'Blekinge län'
+      -
+        value: 19
+        option: Dalarna
+   */
+  public static function setOptionFromArray($form, $item, $array, $add_empty=true){
+    $option = array();
+    if($add_empty){
+      $option[''] = '';
+    }
+    foreach ($array as $key => $value) {
+      $option[$value['value']] = $value['option'];
+    }
+    $form->set("items/$item/option", $option);
+    return $form;
+  }
+  /**
    * Validate form.
    * @param type $form
    * @return type

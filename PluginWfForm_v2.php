@@ -254,7 +254,8 @@ class PluginWfForm_v2{
         'wrap' => null,
         'class' => 'form-control',
         'style' => null,
-        'placeholder' => null
+        'placeholder' => null,
+        'html' => false
             );
     $default_value = array_merge($default_value, $value);
     $type = null;
@@ -272,6 +273,14 @@ class PluginWfForm_v2{
         $type = 'textarea';
         $attribute['wrap'] = $default_value['wrap'];
         $innerHTML = $default_value['default'];
+        /**
+         * HTML editor via Nic Editor.
+         */
+        if($default_value['html']){
+          wfPlugin::includeonce('wysiwyg/nicedit');
+          $nicedit = new PluginWysiwygNicedit();
+          $scripts[] = $nicedit->getTextareaScript($default_value['element_id']);
+        }
         break;
       case 'password':
         $type = 'input';
@@ -297,6 +306,15 @@ class PluginWfForm_v2{
           $attribute['value'] = htmlentities($default_value['default']);
           $attribute['placeholder'] = $default_value['placeholder'];
         }else{
+          /**
+           * Set data from yml file.
+           */
+          if(!is_array($default_value['option'])){
+            $default_value['option'] = wfSettings::getSettingsFromYmlString($default_value['option']);
+          }
+          /**
+           * 
+           */
           $type = 'select';
           $option = array();
           foreach ($default_value['option'] as $key2 => $value2) {

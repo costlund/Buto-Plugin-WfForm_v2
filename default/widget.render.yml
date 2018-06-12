@@ -42,6 +42,11 @@ items:
     lable: Description
     default: null
     mandatory: true
+  description_as_html:
+    type: text
+    lable: Description as HTML (require PluginWysiwygNicedit inlcude widget to be included)
+    default: null
+    html: true
   send_copy_of_this:
     type: checkbox
     lable: Send copy of this

@@ -307,10 +307,13 @@ class PluginWfForm_v2{
           $attribute['placeholder'] = $default_value['placeholder'];
         }else{
           /**
-           * Set data from yml file.
+           * Set data from yml file if 'yml:_pat_to_yml_file_'.
            */
           if(!is_array($default_value['option'])){
             $default_value['option'] = wfSettings::getSettingsFromYmlString($default_value['option']);
+          }
+          if(!is_array($default_value['option'])){
+            $default_value['option'] = wfSettings::getSettingsFromMethod($default_value['option']);
           }
           /**
            * 
@@ -474,6 +477,17 @@ class PluginWfForm_v2{
         option: Dalarna
    */
   public static function setOptionFromArray($form, $item, $array, $add_empty=true){
+    $option = $this->getOption($array, $add_empty);
+    $form->set("items/$item/option", $option);
+    return $form;
+  }
+  /**
+   * Format options to be used in forms.
+   * @param Array $array Keys must be value and option.
+   * @param Boolena $add_empty If begin with an empty option.
+   * @return Array
+   */
+  public static function getOption($array, $add_empty=true){
     $option = array();
     if($add_empty){
       $option[''] = '';
@@ -481,8 +495,7 @@ class PluginWfForm_v2{
     foreach ($array as $key => $value) {
       $option[$value['value']] = $value['option'];
     }
-    $form->set("items/$item/option", $option);
-    return $form;
+    return $option;
   }
   /**
    * Validate form.

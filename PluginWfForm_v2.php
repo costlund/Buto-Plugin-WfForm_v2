@@ -477,7 +477,7 @@ class PluginWfForm_v2{
         option: Dalarna
    */
   public static function setOptionFromArray($form, $item, $array, $add_empty=true){
-    $option = $this->getOption($array, $add_empty);
+    $option = PluginWfForm_v2::getOption($array, $add_empty);
     $form->set("items/$item/option", $option);
     return $form;
   }

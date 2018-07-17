@@ -622,6 +622,28 @@ class PluginWfForm_v2{
     return $errors;
   }
   /**
+   * Get all form errors as array.
+   * @param PluginWfArray $form
+   * @return Array
+   */
+  public static function getErrorsAsArray($form){
+    $errors = array();
+    if($form->get('errors')){
+      foreach ($form->get('errors') as $key => $value){
+        $errors['errors'][] = $value;
+      }
+    }
+    foreach ($form->get('items') as $key => $value) {
+      $item = new PluginWfArray($value);
+      if(!$item->get('is_valid')){
+        foreach ($item->get('errors') as $key2 => $value2){
+          $errors['item'][$key][] =$value2;
+        }
+      }
+    }
+    return $errors;
+  }
+  /**
    * Validate email.
    * @param type $field
    * @param type $form

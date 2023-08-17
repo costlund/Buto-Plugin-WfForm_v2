@@ -28,9 +28,9 @@ class PluginWfForm_v2{
           exit('PluginWfForm_v2 says: Table should only have one primary key.');
         }else{
           $primary_key = $key;
-          if(strstr($item->get('type'), 'varchar(')){
+          if(wfPhpfunc::strstr($item->get('type'), 'varchar(')){
             $primary_type = 's';
-          }elseif(strstr($item->get('type'), 'int(')){
+          }elseif(wfPhpfunc::strstr($item->get('type'), 'int(')){
             $primary_type = 'i';
           }
         }
@@ -59,7 +59,7 @@ class PluginWfForm_v2{
     foreach ($field as $key => $value) {
       $sql .= "$key, ";
     }
-    $sql = substr($sql, 0, strlen($sql)-2);
+    $sql = wfPhpfunc::substr($sql, 0, wfPhpfunc::strlen($sql)-2);
     $sql .= " from ".$form->get('table')." where $primary_key=?;";
     $select = array();
     foreach ($field as $key => $value) {
@@ -137,7 +137,7 @@ class PluginWfForm_v2{
     $default = array(
         'submit_value' => 'Send',
         'submit_class' => 'btn btn-primary',
-        'id' => str_replace('.', '', uniqid(mt_rand(), true)),
+        'id' => wfPhpfunc::str_replace('.', '', uniqid(mt_rand(), true)),
         'script' => null,
         'ajax' => false,
         'url' => '/doc/_',
@@ -359,7 +359,7 @@ class PluginWfForm_v2{
         }
         if($default_value['type'] == 'map'){
           $display = 'none';
-          if(strlen($default_value['default'])){
+          if(wfPhpfunc::strlen($default_value['default'])){
             $display = '';
           }
           $temp['map_icon'] = wfDocument::createHtmlElement('a', array(wfDocument::createHtmlElement('span', null, array('id' => 'span_map_icon_'.$default_value['element_id'], 'class' => 'glyphicon glyphicon-map-marker', 'style' => "display:$display"))), array('onclick' => "PluginWfForm_v2.showMap('".$default_value['element_id']."');", 'class' => 'form-control', 'style' => "text-align:right"));
@@ -521,7 +521,7 @@ class PluginWfForm_v2{
         continue;
       }
         if(isset($value['mandatory']) && $value['mandatory']){
-            if(strlen($value['post_value'])){
+            if(wfPhpfunc::strlen($value['post_value'])){
                 $form['items'][$key]['is_valid'] = true;
             }else{
                 $form['items'][$key]['is_valid'] = false;
@@ -547,7 +547,7 @@ class PluginWfForm_v2{
     //Validate php code injection.
     foreach ($form['items'] as $key => $value) {
       if($value['is_valid']){
-        if (strstr($value['post_value'], '<?php') || strstr($value['post_value'], '?>')) {
+        if (wfPhpfunc::strstr($value['post_value'], '<?php') || wfPhpfunc::strstr($value['post_value'], '?>')) {
             $form['items'][$key]['errors'][] = __('?label has illegal character.', array('?label' => $form['items'][$key]['label']));
             $form['items'][$key]['is_valid'] = false;
         }                
@@ -736,7 +736,7 @@ class PluginWfForm_v2{
     }
     if($data['item']['length']['default_with_settings']){
       // Replace length tag.
-      $data['item']['length']['match'] = str_replace('[length]', $data['item']['length']['default_with_settings'], $data['item']['length']['match']);
+      $data['item']['length']['match'] = wfPhpfunc::str_replace('[length]', $data['item']['length']['default_with_settings'], $data['item']['length']['match']);
     }
     $data['match'] = '$\S*';
     foreach ($data['item'] as $key => $value) {
@@ -818,7 +818,7 @@ class PluginWfForm_v2{
     wfPlugin::includeonce('wf/array');
     $default = array('min' => 0, 'max' => 999999);
     $data = new PluginWfArray(array_merge($default, $data));
-    if(wfArray::get($form, "items/$field/is_valid") && strlen(wfArray::get($form, "items/$field/post_value"))){
+    if(wfArray::get($form, "items/$field/is_valid") && wfPhpfunc::strlen(wfArray::get($form, "items/$field/post_value"))){
       if (!is_numeric(wfArray::get($form, "items/$field/post_value"))) {
         $form = wfArray::set($form, "items/$field/is_valid", false);
         $form = wfArray::set($form, "items/$field/errors/", __('?label is not numeric!', array('?label' => wfArray::get($form, "items/$field/label"))));
@@ -903,16 +903,16 @@ class PluginWfForm_v2{
       foreach ($form->get('items') as $key => $value) {
         $sql .= "$key=?, ";
       }
-      $sql = substr($sql, 0, strlen($sql)-2);
+      $sql = wfPhpfunc::substr($sql, 0, wfPhpfunc::strlen($sql)-2);
       $sql .= " where $primary_key=?;";
       $params = array();
       foreach ($form->get('items') as $key => $value) {
         $item = new PluginWfArray($value);
         
         $type = null;
-        if(strstr($field->get("$key/type"), 'varchar(')){
+        if(wfPhpfunc::strstr($field->get("$key/type"), 'varchar(')){
           $type = 's';
-        }elseif(strstr($field->get("$key/type"), 'int(')){
+        }elseif(wfPhpfunc::strstr($field->get("$key/type"), 'int(')){
           $type = 'i';
         }
         

@@ -307,7 +307,7 @@ class PluginWfForm_v2{
         if(!$default_value['option']){
           $type = 'input';
           $attribute['type'] = 'text';
-          $attribute['value'] = htmlentities($default_value['default']);
+          $attribute['value'] = htmlentities((string)$default_value['default']);
           $attribute['placeholder'] = $default_value['placeholder'];
         }else{
           /**
